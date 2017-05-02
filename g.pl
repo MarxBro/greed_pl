@@ -21,6 +21,8 @@ our $value = 0;
 our $limite = 3;
 our $l = 0;
 
+our $GK = "GAME OVER PAPU";
+
 ######################################################################
 # M A I N
 ######################################################################
@@ -28,11 +30,11 @@ our $l = 0;
 init_grid();
 
 while(42){
-    $value = $G[$cx][$cy] || die "GAME OVER PAPU";
-    $l++ and next if ($cx + $value > $rows);
-    $l++ and next if ($cx - $value < 0);
-    $l++ and next if ($cy + $value > $cols);
-    $l++ and next if ($cy - $value < 0);
+    $value = $G[$cx][$cy] || die $GK;
+    #die $GK if ($cx + $value > $rows);
+    #die $GK if ($cx - $value < -1);
+    die $GK if ($cy + $value > $cols);
+    die $GK if ($cy - $value < -1);
     
     
     pr_grid();
