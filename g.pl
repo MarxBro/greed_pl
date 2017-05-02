@@ -3,9 +3,9 @@
 # Greed protos
 ######################################################################
 
-#use strict;
-#use warnings;
-#use diagnostics;
+use strict;
+use warnings;
+use diagnostics;
 use Data::Dumper;
 use Term::Screen;
 
@@ -27,28 +27,43 @@ our $offset = 2;
 our $scr = new Term::Screen;
 our $GK = "GAME OVER PAPU";
 
+our $score = 0;
+
 ######################################################################
 # M A I N
 ######################################################################
-#{
 init_grid();
 
 while(42){
-    #$scr->at($cx+$offset,$cy+$offset-1);
-    $value = $G[$cx][$cy] || muere();
-    
+    $value = $G[$cx][$cy] ;
     pr_grid();
-    print_( "V: $value\n")  if $debug;
-    print_( "X: $cx\n")     if $debug;
-    print_( "Y: $cy\n")     if $debug;
-    #my $status = move_R();
-    my $status = move_U();
-    if ($status eq "block"){
-        $l++;
-        muere()if ($limite == $l);
-        next;    
+    my $c = $scr->getch();
+        $scr->at(0,0)->clreol();
+    if ( $c eq 'ku' ) {
+        move_U();
     }
-    sleep 1;
+    elsif ( $c eq 'kd' ) {
+        move_D();
+    }
+    elsif ( $c eq 'kl' ) {
+        move_L();
+    }
+    elsif ( $c eq 'kr' ) {
+        move_R();
+    }
+    elsif ( $c eq 'q' ) {
+        muere();
+    }
+    if ($c){
+        $score += $value;
+        
+        print_( "V: $value\n")  if $debug;
+        print_( "X: $cx\n")     if $debug;
+        print_( "Y: $cy\n")     if $debug;
+        
+    }
+
+
 }
 
 ######################################################################
@@ -57,17 +72,16 @@ while(42){
 
 sub init_grid{
     $scr->clrscr();
-    $scr->at(0,0);#clrscr();
     $cx = int(rand($rows ));
     $cy = int(rand($cols ));
     for my $x (0.. $rows){
         for my $y (0.. $cols){
-            $G[$x][$y]=1+(int(rand(7)));
+            $G[$x][$y]=2+(int(rand(7)));
             }
         }
 }
 sub pr_grid {
-    $scr->at(0,0);#clrscr();
+    $scr->at($offset,$offset);
     for my $x (0.. $rows){
         for my $y (0.. $cols){
             if ($x == $cx && $y == $cy){
@@ -75,88 +89,88 @@ sub pr_grid {
             } else {
                 $scr->normal();
             }
-
-            #$G[$x][$y]=1+(int(rand(7)));
             if ($G[$x][$y] == 0){
-                #print " ";    
                 $scr->puts(" ")->at($x+$offset,$y+$offset);
             } else {
-                #print $G[$x][$y];
                 $scr->puts($G[$x][$y])->at($x+$offset,$y+$offset);
             }
             }
         $scr->puts("\n")->at($x+$offset,$cols);
-        #print "\n";
     }
+    $scr->at($rows+$offset*2,$offset)->bold()->puts($value)->normal();
     $scr->at($cx+$offset,$cy+$offset-1);
 }
 
 sub move_R {
-    muere() if ($cy + $value >= $rows);
+    broadcast("NOPE") and return "block" if ($cy + $value +1> $cols);
     my @t = @{$G[$cx]}[$cy .. $cy+$value]; 
     my $blanks = ~~ grep (/0/, @t);
-    #print "$blanks\n";
     if ($blanks == 0){
-        for my $n (0 .. ($value-1)){
-            $G[$cx][$cy + $n] = 0;
+        for my $nnn (0 .. $value){
+            $G[$cx][$cy + $nnn] = 0;
         }
     } else {
+        broadcast("NOPE");
         return "block";    
     }
-    $cy += $value ;
+    $cy+= $value +1;
 }
 
 sub move_L {
-    muere() if ($cy - $value <= -1);
+    broadcast("NOPE") and return "block" if ($cy - $value -1 < 0);
     my @t = @{$G[$cx]}[ $cy-$value .. $cy]; 
     my $blanks = ~~ grep (/0/, @t);
-    #print "$blanks\n";
     if ($blanks == 0){
-        for my $n (0 .. ($value-1)){
-            $G[$cx][$cy - $n] = 0;
+        for my $nn (0 .. $value){
+            $G[$cx][$cy - $nn] = 0;
         }
     } else {
+        broadcast("NOPE");
         return "block";    
     }
-    $cy -= $value ;
+    $cy -= $value +1;
 }
 
 sub move_U {
-    muere() if ($cx - $value <= -1);
+    broadcast("NOPE") and return "block" if ($cx - $value -1< 0);
     my $blanks = 0;
-    for my $n (0 .. ($value - 1)){
-        $blanks++ if ($G[$cx - $value][$cy] == 0);
+    for my $n (0 .. $value){
+        $blanks++ if ($G[$cx - $n][$cy] == 0);
     }
     if ($blanks == 0){
-        for my $n (0 .. ($value - 1)){
-            $G[$cx - $n][$cy] = 0;
+        for my $nnnn (0 .. $value){
+            $G[$cx - $nnnn][$cy] = 0;
         }
     } else {
+        broadcast("NOPE");
         return "block";
     }
-    $cx -= $value;
+    $cx -= $value+1;
 }
 
 sub move_D {
-    muere() if ($cx + $value >= $cols);
+    broadcast("NOPE") and return "block" if ($cx + $value +1> $rows);
     my $blanks = 0;
-    for my $n (0 .. ($value - 1)){
-        $blanks++ if ($G[$cx + $value][$cy] == 0);
+    for my $na (0 .. $value){
+        $blanks++ if ($G[$cx + $na][$cy] == 0);
     }
     if ($blanks == 0){
-        for my $n (0 .. ($value - 1)){
-            $G[$cx + $n][$cy] = 0;
+        for my $nb (0 .. $value){
+            $G[$cx + $nb][$cy] = 0;
         }
     } else {
+        broadcast("NOPE");
         return "block";
     }
-    $cx += $value;
+    $cx += $value+1;
 }
 
 
 sub muere {
     #my $w = 25 + 7; 
-    $scr->at($rows+$offset,$offset)->reverse()->puts($GK)->normal();
+    $scr->at($rows+$offset*2,$offset)->reverse()->puts($GK)->normal();
+    $scr->at($rows+$offset*3,$offset)->bold()->puts("SCORE: $score")->normal();
+    $scr->at($rows+$offset*4,$offset)->puts("\n");
     $scr->clreos();
     exit;
 }
@@ -166,6 +180,7 @@ sub print_ {
     $scr->puts(shift);
     }
 
+sub broadcast {
+    $scr->at(0,0)->bold()->puts(shift)->normal();
+    }
 
-
-#}
