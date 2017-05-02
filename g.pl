@@ -29,6 +29,12 @@ init_grid();
 
 while(42){
     $value = $G[$cx][$cy] || die "GAME OVER PAPU";
+    $l++ and next if ($cx + $value > $rows);
+    $l++ and next if ($cx - $value < 0);
+    $l++ and next if ($cy + $value > $cols);
+    $l++ and next if ($cy - $value < 0);
+    
+    
     pr_grid();
     print "V: $value\n";
     #print "X: $cx\n";
