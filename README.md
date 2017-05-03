@@ -1,0 +1,3 @@
+# Greed
+
+Usando al juego "greed" como excusa para programar algo...

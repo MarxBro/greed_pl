@@ -4,8 +4,8 @@
 ######################################################################
 
 use strict;
-use warnings;
-use diagnostics;
+#use warnings;
+#use diagnostics;
 use Data::Dumper;
 use Term::Screen;
 
@@ -25,9 +25,18 @@ our $l      = 0;
 our $offset = 2;
 
 our $scr = new Term::Screen;
-our $GK  = "GAME OVER PAPU";
+our $GK  = "NO HAY MAS MOVIMIENTOS POSIBLES: GAME OVER PAPU";
 
 our $score = 0;
+our $step_score = 0;
+
+# Track when all directions are blocked so we end the game.
+our %BLOCKED = ( 
+    'ku' => 0 ,
+    'kd' => 0 ,
+    'kl' => 0 ,
+    'kr' => 0 ,
+);
 
 ######################################################################
 # M A I N
@@ -40,30 +49,31 @@ while(42){
     my $c = $scr->getch();
         $scr->at(0,0)->clreol();
     if ( $c eq 'ku' ) {
-        move_U();
+        my $st = move_U();
+        if ($st eq 'block'){ esta_bloqueado($c) } else { $BLOCKED{$c} = 0 };
     }
     elsif ( $c eq 'kd' ) {
-        move_D();
+        my $st = move_D();
+        if ($st eq 'block'){ esta_bloqueado($c) } else { $BLOCKED{$c} = 0 };
     }
     elsif ( $c eq 'kl' ) {
-        move_L();
+        my $st = move_L();
+        if ($st eq 'block'){ esta_bloqueado($c) } else { $BLOCKED{$c} = 0 };
     }
     elsif ( $c eq 'kr' ) {
-        move_R();
+        my $st = move_R();
+        if ($st eq 'block'){ esta_bloqueado($c) } else { $BLOCKED{$c} = 0 };
     }
     elsif ( $c eq 'q' ) {
         muere();
     }
     if ($c){
-        $score += $value;
-        
-        print_( "V: $value\n")  if $debug;
+        $score += $step_score;
+        #print_( "V: $value\n")  if $debug;
         print_( "X: $cx\n")     if $debug;
         print_( "Y: $cy\n")     if $debug;
-        
     }
-
-
+    #die "la gran puta" if ($cx > $cols+$offset || $cy > $rows+$offset);
 }
 
 ######################################################################
@@ -98,16 +108,18 @@ sub pr_grid {
         $scr->puts("\n")->at($x+$offset,$cols);
     }
     $scr->at($rows+$offset*2,$offset)->bold()->puts($value)->normal();
-    $scr->at($cx+$offset,$cy+$offset-1);
+    $scr->at($offset+$cx,$offset+$cy-1);
 }
 
 sub move_R {
+    $step_score = 0;
     broadcast("NOPE") and return "block" if ($cy + $value> $cols);
-    broadcast("NOPE") and return "block" if ($G[$cx][$cy + $value+1] == 0);
+    broadcast("NOPE") and return "block" if ( $G[$cx][$cy + $value+1] == 0 );
     my @t = @{$G[$cx]}[$cy .. $cy+$value]; 
     my $blanks = ~~ grep (/0/, @t);
     if ($blanks == 0){
         for my $nnn (0 .. $value){
+            $step_score += $G[$cx][$cy + $nnn]; 
             $G[$cx][$cy + $nnn] = 0;
         }
     } else {
@@ -118,12 +130,14 @@ sub move_R {
 }
 
 sub move_L {
+    $step_score = 0;
     broadcast("NOPE") and return "block" if ($cy - $value < 0);
     broadcast("NOPE") and return "block" if ($G[$cx][$cy - $value-1] == 0);
     my @t = @{$G[$cx]}[ $cy-$value .. $cy]; 
     my $blanks = ~~ grep (/0/, @t);
     if ($blanks == 0){
         for my $nn (0 .. $value){
+            $step_score += $G[$cx][$cy - $nn]; 
             $G[$cx][$cy - $nn] = 0;
         }
     } else {
@@ -134,6 +148,7 @@ sub move_L {
 }
 
 sub move_U {
+    $step_score = 0;
     broadcast("NOPE") and return "block" if ($cx - $value -1< 0);
     broadcast("NOPE") and return "block" if ($G[$cx - $value -1][$cy] == 0);
     my $blanks = 0;
@@ -142,6 +157,7 @@ sub move_U {
     }
     if ($blanks == 0){
         for my $nnnn (0 .. $value){
+            $step_score += $G[$cx - $nnnn][$cy]; 
             $G[$cx - $nnnn][$cy] = 0;
         }
     } else {
@@ -152,14 +168,16 @@ sub move_U {
 }
 
 sub move_D {
+    $step_score = 0;
     broadcast("NOPE") and return "block" if ($cx + $value +1> $rows);
-    broadcast("NOPE") and return "block" if ($G[$cx + $value +1][$cy]== 0);
+    broadcast("NOPE") and return "block" if ($G[$cx + $value +1][$cy] == 0);
     my $blanks = 0;
     for my $na (0 .. $value){
         $blanks++ if ($G[$cx + $na][$cy] == 0);
     }
     if ($blanks == 0){
         for my $nb (0 .. $value){
+            $step_score += $G[$cx + $nb][$cy];
             $G[$cx + $nb][$cy] = 0;
         }
     } else {
@@ -178,6 +196,14 @@ sub muere {
     exit;
 }
 
+sub esta_bloqueado {
+    my $inputo = shift;
+    $BLOCKED{$inputo} = 1;
+    broadcast("$inputo $BLOCKED{'ku'} $BLOCKED{'kd'} $BLOCKED{'kl'} $BLOCKED{'kr'}") if $debug;
+    if ($BLOCKED{'ku'} == 1 && $BLOCKED{'kd'} == 1 && $BLOCKED{'kl'} == 1 && $BLOCKED{'kr'} == 1){
+        muere();
+    } 
+}
 
 sub print_ {
     $scr->puts(shift);
