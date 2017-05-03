@@ -73,7 +73,8 @@ while(42){
         print_( "X: $cx\n")     if $debug;
         print_( "Y: $cy\n")     if $debug;
     }
-    #die "la gran puta" if ($cx > $cols+$offset || $cy > $rows+$offset);
+    die "$cx menor a $offset" if ( $cx < $offset);
+    die "$cy menor a $offset" if ( $cy < $offset);
 }
 
 ######################################################################
@@ -115,8 +116,12 @@ sub move_R {
     $step_score = 0;
     broadcast("NOPE") and return "block" if ($cy + $value> $cols);
     broadcast("NOPE") and return "block" if ( $G[$cx][$cy + $value+1] == 0 );
-    my @t = @{$G[$cx]}[$cy .. $cy+$value]; 
-    my $blanks = ~~ grep (/0/, @t);
+    #my @t = @{$G[$cx]}[$cy .. $cy+$value]; 
+    #my $blanks = ~~ grep (/0/, @t);
+    my $blanks = 0;
+    for my $nr (0 .. $value){
+        $blanks++ if ($G[$cx][$cy + $nr] == 0);
+    }
     if ($blanks == 0){
         for my $nnn (0 .. $value){
             $step_score += $G[$cx][$cy + $nnn]; 
@@ -133,8 +138,12 @@ sub move_L {
     $step_score = 0;
     broadcast("NOPE") and return "block" if ($cy - $value < 0);
     broadcast("NOPE") and return "block" if ($G[$cx][$cy - $value-1] == 0);
-    my @t = @{$G[$cx]}[ $cy-$value .. $cy]; 
-    my $blanks = ~~ grep (/0/, @t);
+    #my @t = @{$G[$cx]}[ $cy-$value .. $cy]; 
+    #my $blanks = ~~ grep (/0/, @t);
+    my $blanks = 0;
+    for my $nl (0 .. $value){
+        $blanks++ if ($G[$cx][$cy - $nl] == 0);
+    }
     if ($blanks == 0){
         for my $nn (0 .. $value){
             $step_score += $G[$cx][$cy - $nn]; 
@@ -152,8 +161,8 @@ sub move_U {
     broadcast("NOPE") and return "block" if ($cx - $value -1< 0);
     broadcast("NOPE") and return "block" if ($G[$cx - $value -1][$cy] == 0);
     my $blanks = 0;
-    for my $n (0 .. $value){
-        $blanks++ if ($G[$cx - $n][$cy] == 0);
+    for my $nu (0 .. $value){
+        $blanks++ if ($G[$cx - $nu][$cy] == 0);
     }
     if ($blanks == 0){
         for my $nnnn (0 .. $value){
