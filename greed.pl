@@ -1,36 +1,34 @@
 #!/usr/bin/perl
 ######################################################################
-# Greed protos
+# Greed: programando ese jueguillo para hacer algo...
 ######################################################################
 
 use strict;
 #use warnings;
-#use diagnostics;
 use Data::Dumper;
 use Term::Screen;
 
-#$|++;
+my @G    = ();
+my $rows = 25;
+my $cols = $rows * 3;
 
-our @G    = ();
-our $rows = 25;
-our $cols = $rows * 3;
+my $cx    = 0;    
+my $cy    = 0;    
+my $value = 0;
 
-our $cx    = 0;    #int(rand($rows));
-our $cy    = 0;    #int(rand($cols));
-our $value = 0;
+my $debug  = 0;
+my $limite = 3;
+my $l      = 0;
+my $offset = 2;
 
-our $debug  = 0;
-our $limite = 3;
-our $l      = 0;
-our $offset = 2;
+my $scr = new Term::Screen;
+my $GK  = ' >>------------------------>    G A M E  O V E R !!';
 
-our $scr = new Term::Screen;
-our $GK  = "NO HAY MAS MOVIMIENTOS POSIBLES: GAME OVER PAPU";
+my $score = 0;
+my $step_score = 0;
 
-our $score = 0;
-our $step_score = 0;
-
-# Track when all directions are blocked so we end the game.
+# Esto es para llevar rastro de los movimientos bloqueados y
+# terminar el juego cuando no hay mas movimientos posibles.
 our %BLOCKED = ( 
     'ku' => 0 ,
     'kd' => 0 ,
@@ -69,55 +67,56 @@ while(42){
     }
     if ($c){
         $score += $step_score;
-        #print_( "V: $value\n")  if $debug;
         print_( "X: $cx\n")     if $debug;
         print_( "Y: $cy\n")     if $debug;
     }
-    die "$cx menor a $offset" if ( $cx < $offset);
-    die "$cy menor a $offset" if ( $cy < $offset);
+    warn "$cx menor a $offset" if ( $cx < $offset and $debug);
+    warn "$cy menor a $offset" if ( $cy < $offset and $debug);
 }
 
 ######################################################################
 # S U B S
 ######################################################################
 
-sub init_grid{
+# Iniciar la grilla del greed!
+sub init_grid {
     $scr->clrscr();
-    $cx = int(rand($rows ));
-    $cy = int(rand($cols ));
-    for my $x (0.. $rows){
-        for my $y (0.. $cols){
-            $G[$x][$y]=1+(int(rand(8)));
-            }
+    $cx = int( rand($rows) );
+    $cy = int( rand($cols) );
+    for my $x ( 0 .. $rows ) {
+        for my $y ( 0 .. $cols ) {
+            $G[$x][$y] = 1 + ( int( rand(8) ) );
         }
+    }
 }
+
+# Imprimir la grilla en su estado actual.
 sub pr_grid {
-    $scr->at($offset,$offset);
-    for my $x (0.. $rows){
-        for my $y (0.. $cols){
-            if ($x == $cx && $y == $cy){
-                $scr->bold();
+    $scr->at( $offset, $offset );
+    for my $x ( 0 .. $rows ) {
+        for my $y ( 0 .. $cols ) {
+            if ( $x == $cx && $y == $cy ) {
+                $scr->reverse();
             } else {
                 $scr->normal();
             }
-            if ($G[$x][$y] == 0){
-                $scr->puts(" ")->at($x+$offset,$y+$offset);
+            if ( $G[$x][$y] == 0 ) {
+                $scr->puts(" ")->at( $x + $offset, $y + $offset );
             } else {
-                $scr->puts($G[$x][$y])->at($x+$offset,$y+$offset);
+                $scr->puts( $G[$x][$y] )->at( $x + $offset, $y + $offset );
             }
-            }
-        $scr->puts("\n")->at($x+$offset,$cols);
+        }
+        $scr->puts("\n")->at( $x + $offset, $cols );
     }
-    $scr->at($rows+$offset*2,$offset)->bold()->puts($value)->normal();
-    $scr->at($offset+$cx,$offset+$cy-1);
+    $scr->at( $rows + $offset * 2, $offset )->bold()->puts($value)->normal();
+    $scr->at( $offset + $cx,       $offset + $cy - 1 );
 }
 
+# Moverse a la DERECHA (que tan de moda esta...)
 sub move_R {
     $step_score = 0;
-    broadcast("NOPE") and return "block" if ($cy + $value> $cols);
+    broadcast("NOPE") and return "block" if ($cy + $value + 1> $cols);
     broadcast("NOPE") and return "block" if ( $G[$cx][$cy + $value+1] == 0 );
-    #my @t = @{$G[$cx]}[$cy .. $cy+$value]; 
-    #my $blanks = ~~ grep (/0/, @t);
     my $blanks = 0;
     for my $nr (0 .. $value){
         $blanks++ if ($G[$cx][$cy + $nr] == 0);
@@ -134,12 +133,11 @@ sub move_R {
     $cy+= $value +1;
 }
 
+# Moverse a la IZQUIERDA
 sub move_L {
     $step_score = 0;
-    broadcast("NOPE") and return "block" if ($cy - $value < 0);
+    broadcast("NOPE") and return "block" if ($cy - $value - 1 < 0);
     broadcast("NOPE") and return "block" if ($G[$cx][$cy - $value-1] == 0);
-    #my @t = @{$G[$cx]}[ $cy-$value .. $cy]; 
-    #my $blanks = ~~ grep (/0/, @t);
     my $blanks = 0;
     for my $nl (0 .. $value){
         $blanks++ if ($G[$cx][$cy - $nl] == 0);
@@ -156,6 +154,7 @@ sub move_L {
     $cy -= $value +1;
 }
 
+# Pa'rriba
 sub move_U {
     $step_score = 0;
     broadcast("NOPE") and return "block" if ($cx - $value -1< 0);
@@ -176,6 +175,7 @@ sub move_U {
     $cx -= $value +1;
 }
 
+# Pa'joba
 sub move_D {
     $step_score = 0;
     broadcast("NOPE") and return "block" if ($cx + $value +1> $rows);
@@ -196,29 +196,40 @@ sub move_D {
     $cx += $value +1;
 }
 
-
+# Cuando muere el juego, hacemos estas ultimas cosas.
 sub muere {
-    $scr->at($rows+$offset*2,$offset)->reverse()->puts($GK)->normal();
-    $scr->at($rows+$offset*3,$offset)->bold()->puts("SCORE: $score")->normal();
-    $scr->at($rows+$offset*4,$offset)->puts("\n");
+    $scr->at( $rows + $offset * 2, $offset )->bold()->puts($GK)->normal();
+    $scr->at( $rows + $offset * 3, $offset )->bold()->puts("SCORE: $score")
+      ->normal();
+    $scr->at( $rows + $offset * 4, $offset )->puts("\n");
     $scr->clreos();
     exit;
 }
 
+# Cuando algun movimiento esta bloqueado, lo guardamos en el hash.
+# Cuando las cuatro direcciones estan bloqueadas, terminamos el juego.
 sub esta_bloqueado {
     my $inputo = shift;
     $BLOCKED{$inputo} = 1;
-    broadcast("$inputo $BLOCKED{'ku'} $BLOCKED{'kd'} $BLOCKED{'kl'} $BLOCKED{'kr'}") if $debug;
-    if ($BLOCKED{'ku'} == 1 && $BLOCKED{'kd'} == 1 && $BLOCKED{'kl'} == 1 && $BLOCKED{'kr'} == 1){
+    broadcast(
+        "$inputo $BLOCKED{'ku'} $BLOCKED{'kd'} $BLOCKED{'kl'} $BLOCKED{'kr'}")
+      if $debug;
+    if (   $BLOCKED{'ku'} == 1
+        && $BLOCKED{'kd'} == 1
+        && $BLOCKED{'kl'} == 1
+        && $BLOCKED{'kr'} == 1 )
+    {
         muere();
-    } 
+    }
 }
 
+# Pa'debuguear
 sub print_ {
     $scr->puts(shift);
-    }
+}
 
+# Tambien pa'debuggear y para bloquear movimientos.
 sub broadcast {
-    $scr->at(0,0)->bold()->puts(shift)->normal();
-    }
+    $scr->at( 0, 0 )->bold()->puts(shift)->normal();
+}
 
