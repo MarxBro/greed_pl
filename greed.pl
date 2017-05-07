@@ -7,6 +7,10 @@ use strict;
 #use warnings;
 use Data::Dumper;
 use Term::Screen;
+use File::Slurp;
+use POSIX q/strftime/;
+
+
 
 my @G    = ();
 my $rows = 25;
@@ -24,8 +28,11 @@ my $offset = 2;
 my $scr = new Term::Screen;
 my $GK  = ' >>------------------------>    G A M E  O V E R !!';
 
+#Lidiando con los puntajes
 my $score = 0;
 my $step_score = 0;
+my $score_file = '.greed.scores';
+my $saved_scores = 10;
 
 # Esto es para llevar rastro de los movimientos bloqueados y
 # terminar el juego cuando no hay mas movimientos posibles.
@@ -48,19 +55,19 @@ while(42){
         $scr->at(0,0)->clreol();
     if ( $c eq 'ku' ) {
         my $st = move_U();
-        if ($st eq 'block'){ esta_bloqueado($c) } else { $BLOCKED{$c} = 0 };
+        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0 };
     }
     elsif ( $c eq 'kd' ) {
         my $st = move_D();
-        if ($st eq 'block'){ esta_bloqueado($c) } else { $BLOCKED{$c} = 0 };
+        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0 };
     }
     elsif ( $c eq 'kl' ) {
         my $st = move_L();
-        if ($st eq 'block'){ esta_bloqueado($c) } else { $BLOCKED{$c} = 0 };
+        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0 };
     }
     elsif ( $c eq 'kr' ) {
         my $st = move_R();
-        if ($st eq 'block'){ esta_bloqueado($c) } else { $BLOCKED{$c} = 0 };
+        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0 };
     }
     elsif ( $c eq 'q' ) {
         muere();
@@ -109,6 +116,7 @@ sub pr_grid {
         $scr->puts("\n")->at( $x + $offset, $cols );
     }
     $scr->at( $rows + $offset * 2, $offset )->bold()->puts($value)->normal();
+    $scr->at( $rows + $offset * 2, $offset * 2)->bold()->puts($score)->normal();
     $scr->at( $offset + $cx,       $offset + $cy - 1 );
 }
 
@@ -199,9 +207,15 @@ sub move_D {
 # Cuando muere el juego, hacemos estas ultimas cosas.
 sub muere {
     $scr->at( $rows + $offset * 2, $offset )->bold()->puts($GK)->normal();
-    $scr->at( $rows + $offset * 3, $offset )->bold()->puts("SCORE: $score")
+    $scr->at( $rows + $offset * 3, $offset * 2)->bold()->puts("SCORE: $score")
       ->normal();
     $scr->at( $rows + $offset * 4, $offset )->puts("\n");
+    my @poner_scores = highscores();
+    for my $i (0 .. $#poner_scores){
+        last if ($i > 4);
+        $scr->at( $rows + $offset * 4 + 1 + $i, $offset )->puts("$poner_scores[$i]");
+    }
+    $scr->at( $rows + $offset * 4 + 6, $offset )->puts("\n");
     $scr->clreos();
     exit;
 }
@@ -233,3 +247,14 @@ sub broadcast {
     $scr->at( 0, 0 )->bold()->puts(shift)->normal();
 }
 
+# Pa guardar scores
+sub highscores {
+    my $t_banana = strftime ("%d/%B/%Y @ %H:%M:%S",localtime(time()));
+    my $score_ln = $score . '     ' . $t_banana . "\n";
+    `touch $score_file` unless (-e $score_file);
+    write_file($score_file,{append=>1},$score_ln);
+    my @lines = read_file($score_file);
+    my @sorted_lns = sort @lines;
+    return @sorted_lns;
+
+}
