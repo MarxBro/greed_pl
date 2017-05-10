@@ -254,7 +254,7 @@ sub highscores {
     `touch $score_file` unless (-e $score_file);
     write_file($score_file,{append=>1},$score_ln);
     my @lines = read_file($score_file);
-    my @sorted_lns = sort @lines;
+    my @sorted_lns = reverse(sort {$a <=> $b } @lines);
     return @sorted_lns;
 
 }
