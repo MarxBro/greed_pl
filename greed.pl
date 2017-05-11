@@ -10,8 +10,6 @@ use Term::Screen;
 use File::Slurp;
 use POSIX q/strftime/;
 
-
-
 my @G    = ();
 my $rows = 25;
 my $cols = $rows * 3;
@@ -20,7 +18,7 @@ my $cx    = 0;
 my $cy    = 0;    
 my $value = 0;
 
-my $debug  = 0;
+my $debug  = 1;
 my $limite = 3;
 my $l      = 0;
 my $offset = 2;
@@ -33,6 +31,8 @@ my $score = 0;
 my $step_score = 0;
 my $score_file = '.greed.scores';
 my $saved_scores = 10;
+my $score_worth_saving = 700;
+my $movements = 0;
 
 # Esto es para llevar rastro de los movimientos bloqueados y
 # terminar el juego cuando no hay mas movimientos posibles.
@@ -74,6 +74,7 @@ while(42){
     }
     if ($c){
         $score += $step_score;
+        $movements++;
         print_( "X: $cx\n")     if $debug;
         print_( "Y: $cy\n")     if $debug;
     }
@@ -123,8 +124,8 @@ sub pr_grid {
 # Moverse a la DERECHA (que tan de moda esta...)
 sub move_R {
     $step_score = 0;
-    broadcast("NOPE") and return "block" if ($cy + $value + 1> $cols);
-    broadcast("NOPE") and return "block" if ( $G[$cx][$cy + $value+1] == 0 );
+    broadcast("BLOCK") and return "block" if ($cy + $value + 1> $cols);
+    broadcast("BLOCK") and return "block" if ( $G[$cx][$cy + $value+1] == 0 );
     my $blanks = 0;
     for my $nr (0 .. $value){
         $blanks++ if ($G[$cx][$cy + $nr] == 0);
@@ -135,7 +136,7 @@ sub move_R {
             $G[$cx][$cy + $nnn] = 0;
         }
     } else {
-        broadcast("NOPE");
+        broadcast("BLOCK");
         return "block";    
     }
     $cy+= $value +1;
@@ -144,8 +145,8 @@ sub move_R {
 # Moverse a la IZQUIERDA
 sub move_L {
     $step_score = 0;
-    broadcast("NOPE") and return "block" if ($cy - $value - 1 < 0);
-    broadcast("NOPE") and return "block" if ($G[$cx][$cy - $value-1] == 0);
+    broadcast("BLOCK") and return "block" if ($cy - $value - 1 < 0);
+    broadcast("BLOCK") and return "block" if ($G[$cx][$cy - $value-1] == 0);
     my $blanks = 0;
     for my $nl (0 .. $value){
         $blanks++ if ($G[$cx][$cy - $nl] == 0);
@@ -156,7 +157,7 @@ sub move_L {
             $G[$cx][$cy - $nn] = 0;
         }
     } else {
-        broadcast("NOPE");
+        broadcast("BLOCK");
         return "block";    
     }
     $cy -= $value +1;
@@ -165,8 +166,8 @@ sub move_L {
 # Pa'rriba
 sub move_U {
     $step_score = 0;
-    broadcast("NOPE") and return "block" if ($cx - $value -1< 0);
-    broadcast("NOPE") and return "block" if ($G[$cx - $value -1][$cy] == 0);
+    broadcast("BLOCK") and return "block" if ($cx - $value -1< 0);
+    broadcast("BLOCK") and return "block" if ($G[$cx - $value -1][$cy] == 0);
     my $blanks = 0;
     for my $nu (0 .. $value){
         $blanks++ if ($G[$cx - $nu][$cy] == 0);
@@ -177,7 +178,7 @@ sub move_U {
             $G[$cx - $nnnn][$cy] = 0;
         }
     } else {
-        broadcast("NOPE");
+        broadcast("BLOCK");
         return "block";
     }
     $cx -= $value +1;
@@ -186,8 +187,8 @@ sub move_U {
 # Pa'joba
 sub move_D {
     $step_score = 0;
-    broadcast("NOPE") and return "block" if ($cx + $value +1> $rows);
-    broadcast("NOPE") and return "block" if ($G[$cx + $value +1][$cy] == 0);
+    broadcast("BLOCK") and return "block" if ($cx + $value +1> $rows);
+    broadcast("BLOCK") and return "block" if ($G[$cx + $value +1][$cy] == 0);
     my $blanks = 0;
     for my $na (0 .. $value){
         $blanks++ if ($G[$cx + $na][$cy] == 0);
@@ -198,7 +199,7 @@ sub move_D {
             $G[$cx + $nb][$cy] = 0;
         }
     } else {
-        broadcast("NOPE");
+        broadcast("BLOCK");
         return "block";
     }
     $cx += $value +1;
@@ -207,15 +208,18 @@ sub move_D {
 # Cuando muere el juego, hacemos estas ultimas cosas.
 sub muere {
     $scr->at( $rows + $offset * 2,      $offset )       ->bold()->puts($GK)->normal();
-    $scr->at( $rows + $offset * 3,      $offset * 2)    ->bold()->puts("YOUR FINAL SCORE WAS: $score")->normal();
+    $scr->at( $rows + $offset * 3,      $offset * 2)    ->bold()->puts("SCORE: $score")->normal();
+    $scr->at( $rows + $offset * 3,      $offset * 2+15) ->bold()->puts("MOVEMENTS: $movements")->normal();
     $scr->at( $rows + $offset * 4,      $offset )       ->bold()->puts("HIGHSCORES")->normal();
     $scr->at( $rows + $offset * 4 + 1,  $offset )       ->bold()->puts("---------")->normal();
     my @poner_scores = highscores();
     for my $i (0 .. $#poner_scores){
-        last if ($i > 4);
-        my @ln_score = split '@', $poner_scores[$i];
-        $scr->at( $rows + $offset * 4 + 2 + $i, $offset )->bold()->puts("$ln_score[0]")->normal();
-        $scr->at( $rows + $offset * 4 + 2 + $i, $offset + 9 )->puts("$ln_score[1]");
+        last if ($i >= $saved_scores - 1);
+        my @ln_score = split ('@', $poner_scores[$i]);
+        $scr->at( $rows + $offset * 4 + 2 + $i, $offset )       ->bold()    ->puts("$ln_score[0]")->normal();
+        $scr->at( $rows + $offset * 4 + 2 + $i, $offset + 7 )   ->bold()    ->puts("$ln_score[1] mv")->normal();
+        $scr->at( $rows + $offset * 4 + 2 + $i, $offset + 8*2)  ->bold()    ->puts(int($ln_score[0] / $ln_score[1]) . " avg")->normal();
+        $scr->at( $rows + $offset * 4 + 2 + $i, $offset + 8*3)              ->puts("$ln_score[2]");
     }
     $scr->at( $rows + $offset * 4 + 7, 0 )->puts("\n");
     $scr->clreos();
@@ -251,11 +255,16 @@ sub broadcast {
 
 # Pa guardar scores
 sub highscores {
-    my $t_banana = strftime ("%H:%M:%S -- %d/%B/%Y",localtime(time()));
-    my $score_ln = $score . '@' . $t_banana . "\n";
-    `touch $score_file` unless (-e $score_file);
-    write_file($score_file,{append=>1},$score_ln);
-    my @lines = read_file($score_file);
-    my @sorted_lns = reverse(sort {$a <=> $b } @lines);
+    my $t_banana = strftime( "%H:%M:%S -- %d/%B/%Y", localtime( time() ) );
+    my $score_ln = $score . '@' . $movements . '@' .$t_banana . "\n";
+    `touch $score_file` unless ( -e $score_file );
+    write_file( $score_file, { append => 1 }, $score_ln ) if ($score > $score_worth_saving);
+    my @lines       = read_file($score_file);
+    my @sorted_lns  = reverse( sort { $a <=> $b } @lines );
     return @sorted_lns;
 }
+
+__DATA__
+
+print("\e[3A\e[K\e[?25l");   # Hide cursor
+print("\e[2K\e[?25h\n");     # Restore cursor
