@@ -78,8 +78,8 @@ while(42){
         print_( "X: $cx\n")     if $debug;
         print_( "Y: $cy\n")     if $debug;
     }
-    warn "$cx menor a $offset" if ( $cx < $offset and $debug);
-    warn "$cy menor a $offset" if ( $cy < $offset and $debug);
+    #warn "$cx menor a $offset" if ( $cx < $offset and $debug);
+    #warn "$cy menor a $offset" if ( $cy < $offset and $debug);
 }
 
 ######################################################################
