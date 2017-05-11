@@ -206,16 +206,18 @@ sub move_D {
 
 # Cuando muere el juego, hacemos estas ultimas cosas.
 sub muere {
-    $scr->at( $rows + $offset * 2, $offset )->bold()->puts($GK)->normal();
-    $scr->at( $rows + $offset * 3, $offset * 2)->bold()->puts("SCORE: $score")
-      ->normal();
-    $scr->at( $rows + $offset * 4, $offset )->puts("\n");
+    $scr->at( $rows + $offset * 2,      $offset )       ->bold()->puts($GK)->normal();
+    $scr->at( $rows + $offset * 3,      $offset * 2)    ->bold()->puts("YOUR FINAL SCORE WAS: $score")->normal();
+    $scr->at( $rows + $offset * 4,      $offset )       ->bold()->puts("HIGHSCORES")->normal();
+    $scr->at( $rows + $offset * 4 + 1,  $offset )       ->bold()->puts("---------")->normal();
     my @poner_scores = highscores();
     for my $i (0 .. $#poner_scores){
         last if ($i > 4);
-        $scr->at( $rows + $offset * 4 + 1 + $i, $offset )->puts("$poner_scores[$i]");
+        my @ln_score = split '@', $poner_scores[$i];
+        $scr->at( $rows + $offset * 4 + 2 + $i, $offset )->bold()->puts("$ln_score[0]")->normal();
+        $scr->at( $rows + $offset * 4 + 2 + $i, $offset + 9 )->puts("$ln_score[1]");
     }
-    $scr->at( $rows + $offset * 4 + 6, $offset )->puts("\n");
+    $scr->at( $rows + $offset * 4 + 7, 0 )->puts("\n");
     $scr->clreos();
     exit;
 }
@@ -249,12 +251,11 @@ sub broadcast {
 
 # Pa guardar scores
 sub highscores {
-    my $t_banana = strftime ("%d/%B/%Y @ %H:%M:%S",localtime(time()));
-    my $score_ln = $score . '     ' . $t_banana . "\n";
+    my $t_banana = strftime ("%H:%M:%S -- %d/%B/%Y",localtime(time()));
+    my $score_ln = $score . '@' . $t_banana . "\n";
     `touch $score_file` unless (-e $score_file);
     write_file($score_file,{append=>1},$score_ln);
     my @lines = read_file($score_file);
     my @sorted_lns = reverse(sort {$a <=> $b } @lines);
     return @sorted_lns;
-
 }
