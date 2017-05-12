@@ -18,7 +18,7 @@ my $cx    = 0;
 my $cy    = 0;    
 my $value = 0;
 
-my $debug  = 1;
+my $debug  = 0;
 my $limite = 3;
 my $l      = 0;
 my $offset = 2;
@@ -55,26 +55,25 @@ while(42){
         $scr->at(0,0)->clreol();
     if ( $c eq 'ku' ) {
         my $st = move_U();
-        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0 };
+        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0; $movements++; };
     }
     elsif ( $c eq 'kd' ) {
         my $st = move_D();
-        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0 };
+        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0 ; $movements++;};
     }
     elsif ( $c eq 'kl' ) {
         my $st = move_L();
-        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0 };
+        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0 ; $movements++;};
     }
     elsif ( $c eq 'kr' ) {
         my $st = move_R();
-        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0 };
+        if ($st eq 'block'){ esta_bloqueado($c) and next } else { $BLOCKED{$c} = 0 ; $movements++;};
     }
     elsif ( $c eq 'q' ) {
         muere();
     }
     if ($c){
         $score += $step_score;
-        $movements++;
         print_( "X: $cx\n")     if $debug;
         print_( "Y: $cy\n")     if $debug;
     }
@@ -116,8 +115,12 @@ sub pr_grid {
         }
         $scr->puts("\n")->at( $x + $offset, $cols );
     }
-    $scr->at( $rows + $offset * 2, $offset )->bold()->puts($value)->normal();
-    $scr->at( $rows + $offset * 2, $offset * 2)->bold()->puts($score)->normal();
+    my $avg_tmp = '-';
+    $avg_tmp = int($score / $movements) if ($movements);
+    $scr->at( $rows + $offset * 2, $offset      )->bold()->puts("V: $value")->normal();
+    $scr->at( $rows + $offset * 2, $offset * 4  )->bold()->puts("SCO: $score")->normal();
+    $scr->at( $rows + $offset * 2, $offset * 10  )->bold()->puts("MV: $movements")->normal();
+    $scr->at( $rows + $offset * 2, $offset * 15 )->bold()->puts("AVG: $avg_tmp")->normal();
     $scr->at( $offset + $cx,       $offset + $cy - 1 );
 }
 
