@@ -5,7 +5,7 @@
 
 use strict;
 #use warnings;
-use Data::Dumper;
+#use Data::Dumper;
 use Term::Screen;
 use File::Slurp;
 use POSIX q/strftime/;
